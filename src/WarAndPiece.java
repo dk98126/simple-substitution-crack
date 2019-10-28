@@ -1,11 +1,18 @@
 import java.io.BufferedReader;
 import java.io.FileReader;
-import java.util.*;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class WarAndPiece {
 
     public static final int GRAM_NUMBER_FOR_FITNESS = 3;
+
+    public static final int ITERATIONS_PER_KEY = 1000;
+
+    public static final int OUTER_ITERATIONS = 100;
 
     public static void main(String[] args) throws Exception {
         BufferedReader reader = new BufferedReader(new FileReader("war_and_piece.txt"));
@@ -26,40 +33,40 @@ public class WarAndPiece {
         Map<String, Double> gramsProbabilitiesMap = new HashMap<>();
         pairsWithProbabilities.forEach(sc -> gramsProbabilitiesMap.put(sc.getPair().getGram(), sc.getLogProbability()));
 
-        BufferedReader cipheredTextReader = new BufferedReader(new FileReader("test.txt"));
+        BufferedReader cipheredTextReader = new BufferedReader(new FileReader("text.txt"));
 
         List<Character> cipheredSymbols = FitnessUtils.getRussianSymbols(cipheredTextReader.lines());
 
         double bookFitness = FitnessUtils.getTextFitness(russianSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
 
-        double maxFitness = 0;
-        for (int j = 0; j < 1000; j++) {
-            String firstKey = KeyFunctions.getRandomizedKey();
-            String secondKey = KeyFunctions.getRandomizedKey();
+        double cipheredTextFitness = FitnessUtils.getTextFitness(cipheredSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
 
-            String fittestKey = null;
-            for (int i = 0; i < KeyFunctions.RUSSIAN_ALPHABET.length(); i++) {
-                fittestKey = FitnessUtils.findFittestKey(firstKey,
-                        secondKey,
-                        cipheredSymbols,
-                        gramsProbabilitiesMap,
-                        GRAM_NUMBER_FOR_FITNESS);
-                String notFittestKey = !fittestKey.equals(firstKey) ? firstKey : secondKey;
-                firstKey = fittestKey;
-                secondKey = notFittestKey;
-                fittestKey = KeyFunctions.swapTwoCharsIfNeeded(fittestKey, notFittestKey, i);
-                if (FitnessUtils.getKeyFitness(cipheredSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS, fittestKey)
-                        < FitnessUtils.getKeyFitness(cipheredSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS, firstKey)) {
-                    fittestKey = firstKey;
+        //List<Character> cipheredBook = KeyFunctions.getReplacedText(russianSymbols, KeyFunctions.getRandomizedKey());
+
+        //double cipheredBookFitness = FitnessUtils.getTextFitness(cipheredBook, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
+
+        String bestKey = KeyFunctions.getRandomizedKey();
+
+        for (int i = 0; i < OUTER_ITERATIONS; i++) {
+
+            int counter = ITERATIONS_PER_KEY;
+            String key = KeyFunctions.getRandomizedKey();
+            String parentKey = key;
+            while (counter > 0) {
+                key = KeyFunctions.swapTwoChars(key);
+                if (FitnessUtils.findFittestKey(key, parentKey, cipheredSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS).equals(parentKey)) {
+                    key = parentKey;
+                    counter--;
                 } else {
-                    firstKey = fittestKey;
+                    parentKey = key;
+                    counter = ITERATIONS_PER_KEY;
                 }
             }
-
-            List<Character> resultedText = KeyFunctions.getReplacedText(cipheredSymbols, fittestKey);
-            double resultedTextFitness = FitnessUtils.getTextFitness(resultedText, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
-            maxFitness = Math.max(maxFitness, resultedTextFitness);
+            bestKey = FitnessUtils.findFittestKey(key, bestKey, cipheredSymbols, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
         }
-        System.out.println();
+
+        List<Character> resultedText = KeyFunctions.getReplacedText(cipheredSymbols, bestKey);
+        double resultedTextFitness = FitnessUtils.getTextFitness(resultedText, gramsProbabilitiesMap, GRAM_NUMBER_FOR_FITNESS);
+        System.out.println(resultedText.stream().map(String::valueOf).collect(Collectors.joining()));
     }
 }
