@@ -33,7 +33,7 @@ public class WarAndPiece {
         Map<String, Double> gramsProbabilitiesMap = new HashMap<>();
         pairsWithProbabilities.forEach(sc -> gramsProbabilitiesMap.put(sc.getPair().getGram(), sc.getLogProbability()));
 
-        BufferedReader cipheredTextReader = new BufferedReader(new FileReader("text.txt"));
+        BufferedReader cipheredTextReader = new BufferedReader(new FileReader("first_block.txt"));
 
         List<Character> cipheredSymbols = FitnessUtils.getRussianSymbols(cipheredTextReader.lines());
 
